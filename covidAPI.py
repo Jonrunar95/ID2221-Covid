@@ -17,7 +17,7 @@ class API:
     # URI: string
     def getData(self, URI):
         payload = ''
-        headers = {}
+        headers = {'x-access-token': '8ee2b7a5-b8df-44c9-9eb2-2f12da1d5ed8' }
         URI = URI.encode('ascii', 'ignore').decode('ascii')
         self.conn.request("GET", URI, payload, headers)
         res = self.conn.getresponse()
