@@ -17,7 +17,7 @@ class API:
     # URI: string
     def getData(self, URI):
         payload = ''
-        headers = {'x-access-token': '8ee2b7a5-b8df-44c9-9eb2-2f12da1d5ed8' }
+        headers = {'X-Access-Token': '8ee2b7a5-b8df-44c9-9eb2-2f12da1d5ed8' }
         URI = URI.encode('ascii', 'ignore').decode('ascii')
         self.conn.request("GET", URI, payload, headers)
         res = self.conn.getresponse()
@@ -48,7 +48,7 @@ class API:
         countryCases = [] # List of json's for each country
         # For each country, fetch cases from day one
         for c in countries:
-            if(c["Slug"] == "réunion"): # This guy is problem
+            if(c["Slug"] == "réunion" or c["Slug"] == "saint-barthélemy"): # These guys is problem, also empty anyways...
                 continue
             countryCases.append(self.getDayOneCountry(c["Slug"]))
 
@@ -58,7 +58,7 @@ class API:
                     print(countryCases[-1]["message"])
             except:
                 pass
-        print("Data fetch completed")
+        print("Data fetch completed!")
         return countryCases
     
     # Plot daily infections
@@ -87,7 +87,9 @@ if __name__ == "__main__":
     
     data = api.getAllCountryCases()
 
-    # data = api.getDayOneCountry("réunion")
+    #data = api.getData("/summary")  
+
+    #data = api.getDayOneCountry("réunion")
 
     #api.plotCountry("iceland")
 
@@ -96,7 +98,17 @@ if __name__ == "__main__":
     #print(data)
 
     #for d in data:
-    #    print(d)
+    #   print(d["Slug"])
+
+    #print(data)
+
+    for d in data:
+        if len(d) > 0:
+            try:
+                print(d[0])
+            except:
+                print(d)
+        #print(d["Country"])
 
 
 
