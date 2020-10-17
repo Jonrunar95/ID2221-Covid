@@ -8,9 +8,12 @@ from CovidAPI import *
 class Kafka():
     def __init__(self, topic):
         self.topic = topic
-        self.producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
-                         value_serializer=lambda x: 
-                         dumps(x).encode('utf-8'))
+        self.producer = KafkaProducer(
+            bootstrap_servers=['localhost:9092'],
+            key_serializer = str.encode,#lambda x: dumps(x).encode('utf-8'),
+            value_serializer = str.encode #lambda x: dumps(x).encode('utf-8')
+            
+        )
         self.consumer = KafkaConsumer(
             topic,
             bootstrap_servers=['localhost:9092'],
@@ -19,12 +22,14 @@ class Kafka():
             group_id='my-group',
             request_timeout_ms = 15000, # Not sure about this
             consumer_timeout_ms = 20000, # How long until we stop consumer
-            value_deserializer=lambda x: loads(x.decode('utf-8')))
+            value_deserializer= lambda x: loads(x.decode('utf-8'))
+        )
             
 
     # Produce message to topic
-    def produce(self, message):
-        self.producer.send(self.topic, value=message)
+    def produce(self, key, value):
+        print(key, ",", value)
+        self.producer.send(self.topic, key=key, value=value)
 
     # Consumes earliest messages in topic, just prints it for now...
     def consume(self):
@@ -35,19 +40,12 @@ class Kafka():
 
 if __name__ == "__main__":
     api = API()
-    kafka = Kafka("test")
+    kafka = Kafka("AllCountries")
 
     data = api.getDayOneCountry("iceland")
 
     # Produce all daily cases for iceland
     for d in data:
         # Just get relevant info from json object
-        msg = {"Country": d["Country"], "Confirmed": d["Confirmed"], "Deaths": d["Deaths"], "Active": d["Active"], "Date": d["Date"]}
-        kafka.produce(msg)
-
-    kafka.consume()
-
-
-
-
-
+        msg = str(d["Confirmed"]) + "," + str(d["Deaths"]) + "," + str(d["Active"]) + "," + str(d["Date"][0:10])
+        kafka.produce(d["Country"], msg)
