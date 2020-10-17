@@ -41,6 +41,10 @@ class API:
         URI = "/total/dayone/country/" + country
         return self.getData(URI)
 
+    def getAllCountrySummaries(self):
+        URI = "/summary"
+        return self.getData(URI)["Countries"]
+
     # Returns all cases for all countries as a list of jsons
     def getAllCountryCases(self):
         print("Getting a lot of data from API...")
@@ -85,29 +89,37 @@ if __name__ == "__main__":
     # Create API instance
     api = API()
     
-    data = api.getAllCountryCases()
+    #data = api.getAllCountryCases()
 
     #data = api.getData("/summary")  
 
-    #data = api.getDayOneCountry("réunion")
+    #data = api.getDayOneCountry("usa")
 
     #api.plotCountry("iceland")
 
     #data = api.getData("/all")
+
+    data = api.getAllCountrySummaries()
 
     #print(data)
 
     #for d in data:
     #   print(d["Slug"])
 
-    #print(data)
 
     for d in data:
-        if len(d) > 0:
-            try:
-                print(d[0])
-            except:
-                print(d)
+        e = d["Premium"]["CountryStats"]
+        print(e)
+
+
+    #print(data)
+
+    # for d in data:
+    #     if len(d) > 0:
+    #         try:
+    #             print(d[0])
+    #         except:
+    #             print(d)
         #print(d["Country"])
 
 

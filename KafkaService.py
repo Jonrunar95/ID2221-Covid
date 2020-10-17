@@ -43,19 +43,32 @@ class Kafka():
     def consume(self):
         print("Starting consumer...")
         for message in self.consumer:
-            print(message.value)
+            print(message.key, message.value)
         print("Timeout: Stopping consumer")
 
 if __name__ == "__main__":
     api = API()
-    kafka = Kafka("test4")
+    kafka_Cases = Kafka("CountryCases")
+    kafka_Info = Kafka("CountryInfo")
 
-    data = api.getDayOneCountry("iceland")
+    # Get information on each country
+    data = api.getAllCountrySummaries()
+    for x in data:
+        # Just get relevant info from json object
+        d = x["Premium"]["CountryStats"]
+        #'Population', 'PopulationDensity', 'MedianAge', 'Aged65Older', 'Aged70Older', 'ExtremePoverty', 'GdpPerCapita', 'CvdDeathRate', 'DiabetesPrevalence', 
+        #'HandwashingFacilities', 'HospitalBedsPerThousand', 'LifeExpectancy', 'FemaleSmokers', 'MaleSmokers'}
+        msg = str(d["Population"]) + "," + str(d["PopulationDensity"]) + "," + str(d["MedianAge"]) + "," + str(d["LifeExpectancy"])
+        kafka_Info.produce(d["Country"], msg)
+
 
     # Produce all daily cases for iceland
+    data = api.getDayOneCountry("iceland")
     for d in data:
         # Just get relevant info from json object
         msg = str(d["Confirmed"]) + "," + str(d["Deaths"]) + "," + str(d["Active"]) + "," + str(d["Date"][0:10])
-        kafka.produce(d["Country"], msg)
+        kafka_Cases.produce(d["Country"], msg)
 
-    kafka.consume()
+    kafka_Info.consume()
+    kafka_Cases.consume()
+    
