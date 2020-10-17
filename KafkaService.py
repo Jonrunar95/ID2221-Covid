@@ -1,6 +1,7 @@
 from kafka import KafkaProducer
 from kafka import KafkaConsumer
 from json import dumps, loads
+from time import sleep
 from CovidAPI import *
 
 # Kafka instance for specific topic
@@ -22,14 +23,21 @@ class Kafka():
             group_id='my-group',
             request_timeout_ms = 15000, # Not sure about this
             consumer_timeout_ms = 20000, # How long until we stop consumer
-            value_deserializer= lambda x: loads(x.decode('utf-8'))
+            value_deserializer = lambda x: x.decode('utf-8'),
+            key_deserializer = lambda x: x.decode('utf-8')
         )
             
+    def onSendSuccess(self, message):
+        #print("Success:", message)
+        pass
+
+    def onSendError(self, message):
+        print("Error, could not produce message:", message)
 
     # Produce message to topic
     def produce(self, key, value):
-        print(key, ",", value)
-        self.producer.send(self.topic, key=key, value=value)
+        self.producer.send(self.topic, key=key, value=value).add_callback(self.onSendSuccess).add_errback(self.onSendError)
+        sleep(0.005)
 
     # Consumes earliest messages in topic, just prints it for now...
     def consume(self):
@@ -40,7 +48,7 @@ class Kafka():
 
 if __name__ == "__main__":
     api = API()
-    kafka = Kafka("AllCountries")
+    kafka = Kafka("test4")
 
     data = api.getDayOneCountry("iceland")
 
@@ -49,3 +57,5 @@ if __name__ == "__main__":
         # Just get relevant info from json object
         msg = str(d["Confirmed"]) + "," + str(d["Deaths"]) + "," + str(d["Active"]) + "," + str(d["Date"][0:10])
         kafka.produce(d["Country"], msg)
+
+    kafka.consume()
