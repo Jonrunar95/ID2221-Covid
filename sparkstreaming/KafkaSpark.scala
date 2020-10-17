@@ -29,7 +29,6 @@ object KafkaSpark {
   def main(args: Array[String]) {
 
     case class CovidData(confirmed: Int, deaths: Int, active: Int, date: Date, last14: Int)
-    val sdf = new SimpleDateFormat("yyyy MMM dd");
     
     val cluster = Cluster.builder().addContactPoint("127.0.0.1").build()
     val session = cluster.connect()
@@ -37,7 +36,7 @@ object KafkaSpark {
 
     // connect to Cassandra and make a keyspace and table
     session.execute("CREATE KEYSPACE IF NOT EXISTS covid WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };")
-    session.execute("CREATE TABLE IF NOT EXISTS covid.allcountries (country text PRIMARY KEY, deathlast14 float, confirmedlast14 float, deathstotal float, deathsbeforelast14 float, confirmedtotal float, confirmedbeforelast14 float);")
+    session.execute("CREATE TABLE IF NOT EXISTS covid.allcountries (country text PRIMARY KEY, deathlast14 float, confirmedlast14 float);")
 
     // make a connection to Kafka and read (key, value) pairs from it
     val kafkaConf = Map(
@@ -48,7 +47,7 @@ object KafkaSpark {
     )
 
     val sc =  new SparkConf().setAppName("FinalProject").setMaster("local");
-    val ssc = new StreamingContext(sc, Seconds(5))
+    val ssc = new StreamingContext(sc, Seconds(1))
     ssc.checkpoint("checkpointDirectory")
     val topicsSet = Set("AllCountries")
 
@@ -64,48 +63,47 @@ object KafkaSpark {
       (x._1, covidData)
     }
 
-    messages.foreachRDD { rdd =>
-      rdd.collect.foreach(println)
-    }
+    //messages.foreachRDD { rdd =>
+    //  rdd.collect.foreach(println)
+    //}
 
     // measure the average value for each key in a stateful manner
-    /*def mappingFunc(key: String, value: Option[CovidData], state: State[Array[Double]]): (String, Double, Double, Double, Double, Double, Double) = {
+    def mappingFunc(key: String, value: Option[CovidData], state: State[Array[Double]]): (String, Double, Double) = {
 	    //val today = DateTime.now().minusDays(14)
       val today = new Date()
-      val newValue = value.getOrElse(CovidData(0, 0, 0, new GregorianCalendar(1995, 1, 1).getTime()), 0.0)
+
+      val newValue = value.getOrElse(CovidData(0, 0, 0, new GregorianCalendar(1995, 1, 1).getTime(), 1000))
       val valDate = newValue.date
-      val confirmed = newValue.confirmed
-      val deaths = newValue.deaths
-      
+      val newConfirmed = newValue.confirmed
+      val newDeaths = newValue.deaths
+      val diff = newValue.last14
 
       val states = state.getOption.getOrElse(Array(0.0, 0.0, 0.0, 0.0))
-
       var deathsTotal = states(0)
       var deathsBeforeLast14 = states(1)
-
       var confirmedTotal = states(2)
       var confirmedBeforeLast14 = states(3)
 
-      val diff = (today.getTime() - valDate.getTime())/1000/60/60/24
-      if (diff <= 14) {
-        deathsTotal = Math.max(deathsTotal, deaths)
-        confirmedTotal = Math.max(confirmedTotal, confirmed)
-      } else {
-        deathsBeforeLast14 = Math.max(deathsBeforeLast14, deaths)
-        confirmedBeforeLast14 = Math.max(confirmedBeforeLast14, confirmed)
+      if(diff > 14) {
+        deathsBeforeLast14 = Math.max(deathsBeforeLast14, newDeaths)
+        confirmedBeforeLast14 = Math.max(confirmedBeforeLast14, newConfirmed)
       }
+
+      deathsTotal = Math.max(deathsTotal, newDeaths)
+      confirmedTotal = Math.max(confirmedTotal, newConfirmed)
 
       val deathLast14 = deathsTotal-deathsBeforeLast14
       val confirmedLast14 = confirmedTotal - confirmedBeforeLast14
+
       state.update(Array(deathsTotal, deathsBeforeLast14, confirmedTotal, confirmedBeforeLast14))
 
-      (key, deathLast14, confirmedLast14, deathsTotal, deathsBeforeLast14, confirmedTotal, confirmedBeforeLast14)
+      (key, deathLast14, confirmedLast14)
     }
     val stateDstream = messages.mapWithState(StateSpec.function(mappingFunc _))
     // store the result in Cassandra
     stateDstream.foreachRDD { rdd =>
-      rdd.saveToCassandra("covid", "allcountries", SomeColumns("country", "deathlast14", "confirmedlast14", "deathstotal", "deathsbeforelast14", "confirmedtotal", "confirmedbeforelast14"))
-    }*/
+      rdd.saveToCassandra("covid", "allcountries", SomeColumns("country", "deathlast14", "confirmedlast14"))
+    }
     
     ssc.start()
     ssc.awaitTermination()
