@@ -48,27 +48,24 @@ class Kafka():
 
 if __name__ == "__main__":
     api = API()
-    kafka_Cases = Kafka("CountryCases")
-    kafka_Info = Kafka("CountryInfo")
 
-    # Get information on each country
+    kafka_Info = Kafka("CountryInfo")
     data = api.getAllCountrySummaries()
+
     for x in data:
         # Just get relevant info from json object
         d = x["Premium"]["CountryStats"]
-        #'Population', 'PopulationDensity', 'MedianAge', 'Aged65Older', 'Aged70Older', 'ExtremePoverty', 'GdpPerCapita', 'CvdDeathRate', 'DiabetesPrevalence', 
-        #'HandwashingFacilities', 'HospitalBedsPerThousand', 'LifeExpectancy', 'FemaleSmokers', 'MaleSmokers'}
-        msg = str(d["Population"]) + "," + str(d["PopulationDensity"]) + "," + str(d["MedianAge"]) + "," + str(d["LifeExpectancy"])
-        kafka_Info.produce(d["Country"], msg)
-
-
-    # Produce all daily cases for iceland
+        #{'Population', 'PopulationDensity', 'MedianAge', 'Aged65Older', 'Aged70Older','ExtremePoverty', 'GdpPerCapita', 'CvdDeathRate', 'DiabetesPrevalence', 'HandwashingFacilities', 'HospitalBedsPerThousand', 'LifeExpectancy', 'FemaleSmokers', 'MaleSmokers'}
+        msg = str(x["NewConfirmed"]) + "," + str(x["TotalConfirmed"]) + "," + str(x["NewDeaths"]) + "," + str(x["TotalDeaths"]) + "," + str(d["Population"]) + "," + str(d["CvdDeathRate"]) + "," + str(x["Date"][0:10])
+        if d["Country"] is not "":
+            kafka_Info.produce(d["Country"], msg)
+    
+    '''
+    kafka_Cases = Kafka("CountryCases")
+    #data = api.getAllCountryCases()
     data = api.getDayOneCountry("iceland")
     for d in data:
         # Just get relevant info from json object
-        msg = str(d["Confirmed"]) + "," + str(d["Deaths"]) + "," + str(d["Active"]) + "," + str(d["Date"][0:10])
+        msg = str(d["Confirmed"]) + "," + str(d["Active"]) + "," + str(d["Deaths"]) + "," + str(d["Date"][0:10])
         kafka_Cases.produce(d["Country"], msg)
-
-    kafka_Info.consume()
-    kafka_Cases.consume()
-    
+    '''

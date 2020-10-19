@@ -35,7 +35,7 @@ object KafkaSparkAllCountries {
 
     // connect to Cassandra and make a keyspace and table
     session.execute("CREATE KEYSPACE IF NOT EXISTS covid WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };")
-    session.execute("CREATE TABLE IF NOT EXISTS covid.countrydata (country text PRIMARY KEY, newconfirmed float, totalconfirmed float, newdeaths float, totaldeaths float, population float, date float);")
+    session.execute("CREATE TABLE IF NOT EXISTS covid.countryinfo (country text PRIMARY KEY, newconfirmed float, totalconfirmed float, newdeaths float, totaldeaths float, population float, deathrate float, date text);")
     // make a connection to Kafka and read (key, value) pairs from it
     val kafkaConf = Map(
       "metadata.broker.list" -> "localhost:9092",
@@ -55,16 +55,13 @@ object KafkaSparkAllCountries {
 
     val messages = kafkaStream.map { x =>
       val data = x._2.split(",")
-      val dateString = data(5).split("-")
-      //val date = new GregorianCalendar(dateString(0).toInt, dateString(1).toInt -1, dateString(2).toInt).getTime()
-      //val covidData = CovidData(data(0).toInt, data(1).toInt, data(2).toInt, data(3).toInt, data(4).toInt, date)
-      (x._1, data(0).toInt, data(1).toInt, data(2).toInt, data(3).toInt, data(4).toInt)
+      (x._1, data(0).toInt, data(1).toInt, data(2).toInt, data(3).toInt, data(4).toInt, data(5).toDouble, data(6))
     }
 
 
     // store the result in Cassandra
     messages.foreachRDD { rdd =>
-      rdd.saveToCassandra("covid", "countrydata", SomeColumns("country", "newconfirmed", "totalconfirmed", "newdeaths", "totaldeaths", "population"))
+      rdd.saveToCassandra("covid", "countryinfo", SomeColumns("country", "newconfirmed", "totalconfirmed", "newdeaths", "totaldeaths", "population", "deathrate", "date"))
     }
     
     ssc.start()
