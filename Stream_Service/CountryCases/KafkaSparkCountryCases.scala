@@ -22,6 +22,7 @@ import com.datastax.spark.connector._
 import com.datastax.driver.core.{Session, Cluster, Host, Metadata}
 import com.datastax.spark.connector.streaming._
 import java.time.temporal.ChronoUnit
+import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 
@@ -30,14 +31,17 @@ import org.apache.spark.streaming.{Seconds, StreamingContext}
 object KafkaSparkAllCountries {
   def main(args: Array[String]) {
 
-    case class CountryCases(confirmed: Int, active: Int, deaths: Int, last14: Int)
+    case class CountryCases(confirmed: Int, active: Int, deaths: Int, last14: Int, date: String)
     
     val cluster = Cluster.builder().addContactPoint("127.0.0.1").build()
     val session = cluster.connect()
 
     // connect to Cassandra and make a keyspace and table
     session.execute("CREATE KEYSPACE IF NOT EXISTS covid WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };")
-    session.execute("CREATE TABLE IF NOT EXISTS covid.countrycases (country text PRIMARY KEY, confirmed float, active float, deaths float, confirmedlast14 float, deathlast14 float, date text);")
+    //session.execute("CREATE TABLE IF NOT EXISTS covid.countrycases (country text PRIMARY KEY, confirmed float, active float, deaths float, confirmedlast14 float, deathlast14 float, date text);")
+    session.execute("CREATE TABLE IF NOT EXISTS covid.countrycases (country text, confirmed float, deaths float, confirmedlast14 float, deathlast14 float, date text, PRIMARY KEY(country, date));")
+
+
     // make a connection to Kafka and read (key, value) pairs from it
     val kafkaConf = Map(
       "metadata.broker.list" -> "localhost:9092",
@@ -64,16 +68,12 @@ object KafkaSparkAllCountries {
       val date = LocalDate.parse(data(3)); 
       val today = LocalDate.now()
       val diff = date.until(today, ChronoUnit.DAYS)
-      val covidData = CountryCases(data(0).toInt, data(1).toInt, data(2).toInt, diff.toInt)
+      val covidData = CountryCases(data(0).toInt, data(1).toInt, data(2).toInt, diff.toInt, data(3))
       (x._1, covidData)
     }
 
-    messages.foreachRDD { rdd =>
-      rdd.collect.foreach(println)
-    }
-
     // measure the average value for each key in a stateful manner
-    def mappingFunc(key: String, value: Option[CountryCases], state: State[Array[Double]]): (String, Double, Double, Double, Double, Double, String) = {
+    /*def mappingFunc(key: String, value: Option[CountryCases], state: State[Array[Double]]): (String, Double, Double, Double, Double, Double, String) = {
       val newValue = value.getOrElse(CountryCases(0, 0, 0, 1000))
       val newConfirmed = newValue.confirmed
       val newActive = newValue.active
@@ -108,17 +108,64 @@ object KafkaSparkAllCountries {
       val deathLast14 = deathsTotal-deathsBeforeLast14
 
       (key, confirmedTotal, activeTotal, deathsTotal, confirmedLast14, deathLast14, LocalDate.now().minusDays(newestDate.toLong).toString())
+    }*/
+
+    def mappingFunc(key: String, value: Option[CountryCases], state: State[ArrayBuffer[ArrayBuffer[Double]]]): (String, Double, Double, Double, Double, String) = {
+      val newValue = value.getOrElse(CountryCases(0, 0, 0, 0, ""))
+      val newConfirmed = newValue.confirmed
+      val newDeaths = newValue.deaths
+
+      val states = state.getOption.getOrElse(
+        ArrayBuffer(
+          ArrayBuffer(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+          ArrayBuffer(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        )
+      )
+     
+      var confirmedArray = states(0)
+      var deathArray = states(1)
+
+
+      confirmedArray.remove(0)
+      confirmedArray += newConfirmed
+      deathArray.remove(0)
+      deathArray += newDeaths
+
+      if(confirmedArray(confirmedArray.length-2) > confirmedArray(confirmedArray.length-1)) {
+        confirmedArray(confirmedArray.length-2) = confirmedArray(confirmedArray.length-1)
+      }
+      if(deathArray(deathArray.length-2) > deathArray(deathArray.length-1)) {
+        deathArray(deathArray.length-2) = deathArray(deathArray.length-1)
+      }
+      
+      state.update(ArrayBuffer(confirmedArray, deathArray))
+
+      var confirmedLast14 = 0.0
+      var deathLast14 = 0.0
+
+      if(confirmedArray.length < 14) {
+        confirmedLast14 = confirmedArray.last
+        deathLast14 = deathArray.last
+      } else {
+        confirmedLast14 = confirmedArray.last - confirmedArray(0)
+        deathLast14 = deathArray.last - deathArray(0)
+      }
+
+      val confirmedToday =  confirmedArray.last - confirmedArray(confirmedArray.length-2)
+      val deathsToday = deathArray.last - deathArray(deathArray.length-2) 
+
+      (key, confirmedLast14, confirmedToday, deathLast14, deathsToday, newValue.date)
     }
     val stateDstream = messages.mapWithState(StateSpec.function(mappingFunc _))
     
-    stateDstream.foreachRDD { rdd =>
+    /*stateDstream.foreachRDD { rdd =>
       rdd.collect.foreach(println)
-    }
+    }*/
     // store the result in Cassandra
     stateDstream.foreachRDD { rdd =>
-      rdd.saveToCassandra("covid", "countrycases", SomeColumns("country", "confirmed", "active", "deaths", "confirmedlast14", "deathlast14", "date"))
+      rdd.saveToCassandra("covid", "countrycases", SomeColumns("country", "confirmedlast14", "confirmed", "deathlast14", "deaths", "date"))
+      //rdd.saveToCassandra("covid", "countrycases", SomeColumns("country", "confirmed", "active", "deaths", "confirmedlast14", "deathlast14", "date"))
     }
-    
     ssc.start()
     ssc.awaitTermination()
   }

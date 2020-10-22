@@ -95,11 +95,11 @@ if __name__ == "__main__":
 
     #data = api.getDayOneCountry("usa")
 
-    #api.plotCountry("iceland")
+    api.plotCountry("iceland")
 
     #data = api.getData("/all")
 
-    data = api.getAllCountrySummaries()
+    #data = api.getAllCountrySummaries()
 
     #print(data)
 
@@ -107,9 +107,9 @@ if __name__ == "__main__":
     #   print(d["Slug"])
 
 
-    for d in data:
-        e = d["Premium"]["CountryStats"]
-        print(e)
+    #for d in data:
+    #    e = d["Premium"]["CountryStats"]
+    #    print(e)
 
 
     #print(data)
