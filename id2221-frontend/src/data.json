@@ -1,0 +1,19 @@
+{
+    "data":[
+        {
+			"Country": "Iceland",
+			"Date": "21.10.2020",
+			"NewConfirmed": 10,
+			"TotalConfirmed": 100,
+			"NewDeaths": 1,
+			"TotalDeaths": 10,
+			"Population": 20320,
+			"DeathRate": 0.3
+		},
+        {"Country": "Sweden", "Date": "21.10.2020", "NewConfirmed": 10, "TotalConfirmed": 100, "NewDeaths": 1, "TotalDeaths": 10, "Population": 20320, "DeathRate": 0.3},
+        {"Country": "UK", "Date": "21.10.2020", "NewConfirmed": 10, "TotalConfirmed": 100, "NewDeaths": 1, "TotalDeaths": 10, "Population": 20320, "DeathRate": 0.3},
+        {"Country": "France", "Date": "21.10.2020", "NewConfirmed": 10, "TotalConfirmed": 100, "NewDeaths": 1, "TotalDeaths": 10, "Population": 20320, "DeathRate": 0.3},
+        {"Country": "Italy", "Date": "21.10.2020", "NewConfirmed": 10, "TotalConfirmed": 100, "NewDeaths": 1, "TotalDeaths": 10, "Population": 20320, "DeathRate": 0.3},
+        {"Country": "USA", "Date": "21.10.2020", "NewConfirmed": 10, "TotalConfirmed": 100, "NewDeaths": 1, "TotalDeaths": 10, "Population": 20320, "DeathRate": 0.3}
+    ]
+}
