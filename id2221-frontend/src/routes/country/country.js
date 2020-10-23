@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import mockData from '../../data2.json'
 import './country.css';
 import plot from './IcelandPlot.png'
 
@@ -22,12 +21,11 @@ export default class Country extends Component {
 	}
 
 	async fetchData() {
-		//const response = await fetch("localhost:8888/frontpage");
-		//const data = await response.json();
-		return mockData; 
+		const response = await fetch(window.location.pathname);
+		//const response = await fetch("/Country");
+		const data = await response.json();
+		return data 
 	}
-
-
 
 	createTable(data) {
 		const array = [];

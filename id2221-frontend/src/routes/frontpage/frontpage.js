@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import mockData from '../../data.json'
 import { Link } from 'react-router-dom';
 import './frontpage.css';
 
@@ -28,9 +27,9 @@ export default class Frontpage extends Component {
 	}
 
 	async fetchData() {
-		//const response = await fetch("localhost:8888/frontpage");
-		//const data = await response.json();
-		return mockData; 
+		const response = await fetch("/frontpage");
+		const data = await response.json();
+		return data
 	}
 
 	handleSearch(event) {
