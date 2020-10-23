@@ -46,26 +46,39 @@ class Kafka():
             print(message.key, message.value)
         print("Timeout: Stopping consumer")
 
-if __name__ == "__main__":
+def CountryInfoProducer():
     api = API()
 
     kafka_Info = Kafka("CountryInfo")
     data = api.getAllCountrySummaries()
 
     for x in data:
-        # Just get relevant info from json object
         d = x["Premium"]["CountryStats"]
-        #{'Population', 'PopulationDensity', 'MedianAge', 'Aged65Older', 'Aged70Older','ExtremePoverty', 'GdpPerCapita', 'CvdDeathRate', 'DiabetesPrevalence', 'HandwashingFacilities', 'HospitalBedsPerThousand', 'LifeExpectancy', 'FemaleSmokers', 'MaleSmokers'}
         msg = str(x["NewConfirmed"]) + "," + str(x["TotalConfirmed"]) + "," + str(x["NewDeaths"]) + "," + str(x["TotalDeaths"]) + "," + str(d["Population"]) + "," + str(d["CvdDeathRate"]) + "," + str(x["Date"][0:10])
         if d["Country"] is not "":
             kafka_Info.produce(d["Country"], msg)
-    
-    '''
+
+def CountryCasesProducer():
+    api = API()
     kafka_Cases = Kafka("CountryCases")
-    #data = api.getAllCountryCases()
-    data = api.getDayOneCountry("iceland")
-    for d in data:
-        # Just get relevant info from json object
-        msg = str(d["Confirmed"]) + "," + str(d["Active"]) + "," + str(d["Deaths"]) + "," + str(d["Date"][0:10])
-        kafka_Cases.produce(d["Country"], msg)
-    '''
+
+    countries = api.getAllCountryNames()
+
+    i = 0
+    numCountries = len(countries)
+
+    for c in countries:
+        print(str(i) + "/" + str(numCountries) + " " + c["Slug"] + "...", end=" ")
+        i += 1
+        if(c["Slug"] == "réunion" or c["Slug"] == "saint-barthélemy"): # These guys is problem, also empty anyways...
+            continue
+        data = api.getDayOneCountry(c["Slug"])
+        for d in data:
+            msg = str(d["Confirmed"]) + "," + str(d["Active"]) + "," + str(d["Deaths"]) + "," + str(d["Date"][0:10])
+            kafka_Cases.produce(d["Country"], msg)
+        print("Done")
+
+
+if __name__ == "__main__":
+    CountryInfoProducer()
+    CountryCasesProducer()
