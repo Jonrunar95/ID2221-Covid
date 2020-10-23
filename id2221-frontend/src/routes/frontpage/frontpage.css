@@ -1,3 +1,20 @@
+.Frontpage {
+	display: block;
+}
+
+.input {
+                    
+    width: calc(100% - 20px);
+    display:block;
+    border: 1px solid #D6DBDE;
+    background-color: #FFFFFF;
+    color: #54534A;
+    font-weight: 400;
+    font-size: 17px;
+    line-height: 28px;
+    padding: 11px 0 9px 15px;
+}
+
 .Table {
     margin-left: 20px;
     margin-top: 12px;

@@ -65,50 +65,12 @@ object KafkaSparkAllCountries {
       // val dateString = data(3).split("-")
       // val date = new GregorianCalendar(dateString(0).toInt, dateString(1).toInt -1, dateString(2).toInt).getTime()
       // val diff = (today.getTime() - date.getTime())/1000/60/60/24
-      val date = LocalDate.parse(data(3)); 
+      val date = LocalDate.parse(data(3))
       val today = LocalDate.now()
       val diff = date.until(today, ChronoUnit.DAYS)
       val covidData = CountryCases(data(0).toInt, data(1).toInt, data(2).toInt, diff.toInt, data(3))
       (x._1, covidData)
     }
-
-    // measure the average value for each key in a stateful manner
-    /*def mappingFunc(key: String, value: Option[CountryCases], state: State[Array[Double]]): (String, Double, Double, Double, Double, Double, String) = {
-      val newValue = value.getOrElse(CountryCases(0, 0, 0, 1000))
-      val newConfirmed = newValue.confirmed
-      val newActive = newValue.active
-      val newDeaths = newValue.deaths
-      val diff = newValue.last14
-
-      val states = state.getOption.getOrElse(Array(10000.0, 0.0, 0.0, 0.0, 100000.0, 0.0, 0.0))
-     
-      var newestDate = states(0)
-      var confirmedTotal = states(1)
-      var activeTotal = states(2)
-      var deathsTotal = states(3)
-
-      var newestDateBeforeLast14 = states(4)
-      var confirmedBeforeLast14 = states(5)
-      var deathsBeforeLast14 = states(6)
-
-      if(diff < newestDateBeforeLast14 && diff > 14) {
-        confirmedBeforeLast14 = newConfirmed
-        deathsBeforeLast14 = newDeaths
-        newestDateBeforeLast14 = diff
-      } 
-      if(diff < newestDate) {
-        confirmedTotal = newConfirmed
-        activeTotal = newActive
-        deathsTotal = newDeaths   
-        newestDate = diff      
-      }
-      state.update(Array(newestDate, confirmedTotal, activeTotal, deathsTotal, newestDateBeforeLast14, confirmedBeforeLast14, deathsBeforeLast14))
-
-      val confirmedLast14 = confirmedTotal - confirmedBeforeLast14
-      val deathLast14 = deathsTotal-deathsBeforeLast14
-
-      (key, confirmedTotal, activeTotal, deathsTotal, confirmedLast14, deathLast14, LocalDate.now().minusDays(newestDate.toLong).toString())
-    }*/
 
     def mappingFunc(key: String, value: Option[CountryCases], state: State[ArrayBuffer[ArrayBuffer[Double]]]): (String, Double, Double, Double, Double, String) = {
       val newValue = value.getOrElse(CountryCases(0, 0, 0, 0, ""))
