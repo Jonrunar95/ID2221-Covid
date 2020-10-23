@@ -54,9 +54,10 @@ def CountryInfoProducer():
 
     for x in data:
         d = x["Premium"]["CountryStats"]
+        key = x["Country"]
         msg = str(x["NewConfirmed"]) + "," + str(x["TotalConfirmed"]) + "," + str(x["NewDeaths"]) + "," + str(x["TotalDeaths"]) + "," + str(d["Population"]) + "," + str(d["CvdDeathRate"]) + "," + str(x["Date"][0:10])
-        if d["Country"] is not "":
-            kafka_Info.produce(d["Country"], msg)
+        if key is not "":
+            kafka_Info.produce(key, msg)
 
 def CountryCasesProducer():
     api = API()
