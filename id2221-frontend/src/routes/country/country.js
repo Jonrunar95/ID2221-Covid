@@ -58,27 +58,29 @@ export default class Country extends Component {
 		return (
 			<div className="Main">
 				<div className="Table">
-					<table className = "table">
-						<thead>
-						<tr className="tr">
-							<th className="th">Date</th>
-							<th className="th">Confirmed</th>
-							<th className="th">Active</th>
-							<th className="th">Deaths</th>
-							<th className="th">R</th>
-							<th className="th">R-Deaths</th>
-						</tr>
-						</thead>
-						<tbody>
-						{this.createTable(data.data)}
-						</tbody>
-					</table>
+					<div className="Images">
+						<b>Daily Infections</b>
+						<img src={window.location.pathname + "/plot_DailyCases.png"} alt="Daily Infections" />
+						<b>Infection Trend past 14 days</b>
+						<img src={window.location.pathname + "/plot_InfectionTrend.png"} alt="" />
+					</div>
+						<table className = "table">
+							<thead>
+							<tr className="tr">
+								<th className="th">Date</th>
+								<th className="th">Confirmed</th>
+								<th className="th">Active</th>
+								<th className="th">Deaths</th>
+								<th className="th">R</th>
+								<th className="th">R-Deaths</th>
+							</tr>
+							</thead>
+							<tbody>
+							{this.createTable(data.data)}
+							</tbody>
+						</table>
 				</div>
-				<div className="Images">
-					<img src={plot} alt=" " />
-					<img src={plot} alt=" " />
-					<img src={plot} alt=" " />
-				</div>
+				
 			</div>
 		  );
 	}
