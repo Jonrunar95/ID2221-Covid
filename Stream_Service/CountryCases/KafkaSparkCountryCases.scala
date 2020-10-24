@@ -39,7 +39,7 @@ object KafkaSparkAllCountries {
     // connect to Cassandra and make a keyspace and table
     session.execute("CREATE KEYSPACE IF NOT EXISTS covid WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };")
     //session.execute("CREATE TABLE IF NOT EXISTS covid.countrycases (country text PRIMARY KEY, confirmed float, active float, deaths float, confirmedlast14 float, deathlast14 float, date text);")
-    session.execute("CREATE TABLE IF NOT EXISTS covid.countrycases (country text, confirmed float, deaths float, confirmedlast14 float, deathlast14 float, date text, PRIMARY KEY(country, date));")
+    session.execute("CREATE TABLE IF NOT EXISTS covid.countrycases (country text, confirmed float, active float, deaths float, confirmedtoday float, deathstoday float, confirmedlast14 float, deathlast14 float, date text, PRIMARY KEY(country, date));")
 
 
     // make a connection to Kafka and read (key, value) pairs from it
@@ -65,14 +65,52 @@ object KafkaSparkAllCountries {
       // val dateString = data(3).split("-")
       // val date = new GregorianCalendar(dateString(0).toInt, dateString(1).toInt -1, dateString(2).toInt).getTime()
       // val diff = (today.getTime() - date.getTime())/1000/60/60/24
-      val date = LocalDate.parse(data(3))
+      val date = LocalDate.parse(data(3)); 
       val today = LocalDate.now()
       val diff = date.until(today, ChronoUnit.DAYS)
       val covidData = CountryCases(data(0).toInt, data(1).toInt, data(2).toInt, diff.toInt, data(3))
       (x._1, covidData)
     }
 
-    def mappingFunc(key: String, value: Option[CountryCases], state: State[ArrayBuffer[ArrayBuffer[Double]]]): (String, Double, Double, Double, Double, String) = {
+    // measure the average value for each key in a stateful manner
+    /*def mappingFunc(key: String, value: Option[CountryCases], state: State[Array[Double]]): (String, Double, Double, Double, Double, Double, String) = {
+      val newValue = value.getOrElse(CountryCases(0, 0, 0, 1000))
+      val newConfirmed = newValue.confirmed
+      val newActive = newValue.active
+      val newDeaths = newValue.deaths
+      val diff = newValue.last14
+
+      val states = state.getOption.getOrElse(Array(10000.0, 0.0, 0.0, 0.0, 100000.0, 0.0, 0.0))
+     
+      var newestDate = states(0)
+      var confirmedTotal = states(1)
+      var activeTotal = states(2)
+      var deathsTotal = states(3)
+
+      var newestDateBeforeLast14 = states(4)
+      var confirmedBeforeLast14 = states(5)
+      var deathsBeforeLast14 = states(6)
+
+      if(diff < newestDateBeforeLast14 && diff > 14) {
+        confirmedBeforeLast14 = newConfirmed
+        deathsBeforeLast14 = newDeaths
+        newestDateBeforeLast14 = diff
+      } 
+      if(diff < newestDate) {
+        confirmedTotal = newConfirmed
+        activeTotal = newActive
+        deathsTotal = newDeaths   
+        newestDate = diff      
+      }
+      state.update(Array(newestDate, confirmedTotal, activeTotal, deathsTotal, newestDateBeforeLast14, confirmedBeforeLast14, deathsBeforeLast14))
+
+      val confirmedLast14 = confirmedTotal - confirmedBeforeLast14
+      val deathLast14 = deathsTotal-deathsBeforeLast14
+
+      (key, confirmedTotal, activeTotal, deathsTotal, confirmedLast14, deathLast14, LocalDate.now().minusDays(newestDate.toLong).toString())
+    }*/
+
+    def mappingFunc(key: String, value: Option[CountryCases], state: State[ArrayBuffer[ArrayBuffer[Double]]]): (String, Int, Int, Int, Double, Double, Double, Double, String) = {
       val newValue = value.getOrElse(CountryCases(0, 0, 0, 0, ""))
       val newConfirmed = newValue.confirmed
       val newDeaths = newValue.deaths
@@ -116,7 +154,7 @@ object KafkaSparkAllCountries {
       val confirmedToday =  confirmedArray.last - confirmedArray(confirmedArray.length-2)
       val deathsToday = deathArray.last - deathArray(deathArray.length-2) 
 
-      (key, confirmedLast14, confirmedToday, deathLast14, deathsToday, newValue.date)
+      (key, newValue.confirmed, newValue.active, newValue.deaths, confirmedLast14, confirmedToday, deathLast14, deathsToday, newValue.date)
     }
     val stateDstream = messages.mapWithState(StateSpec.function(mappingFunc _))
     
@@ -125,7 +163,7 @@ object KafkaSparkAllCountries {
     }*/
     // store the result in Cassandra
     stateDstream.foreachRDD { rdd =>
-      rdd.saveToCassandra("covid", "countrycases", SomeColumns("country", "confirmedlast14", "confirmed", "deathlast14", "deaths", "date"))
+      rdd.saveToCassandra("covid", "countrycases", SomeColumns("country", "confirmed", "active", "deaths", "confirmedlast14", "confirmedtoday", "deathlast14", "deathstoday", "date"))
       //rdd.saveToCassandra("covid", "countrycases", SomeColumns("country", "confirmed", "active", "deaths", "confirmedlast14", "deathlast14", "date"))
     }
     ssc.start()
