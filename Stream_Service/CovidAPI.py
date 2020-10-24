@@ -64,7 +64,11 @@ class API:
                 pass
         print("Data fetch completed!")
         return countryCases
-    
+
+    def getCountryProvinceCases(self, country):
+        URI = "/country/" + country
+        return self.getData(URI)
+
     # Plot daily infections
     # country: string
     def plotCountry(self, country):
@@ -88,14 +92,16 @@ class API:
 if __name__ == "__main__":
     # Create API instance
     api = API()
-    
+
+    #countries = api.getAllCountryNames()
+
     #data = api.getAllCountryCases()
 
     #data = api.getData("/summary")  
 
     #data = api.getDayOneCountry("usa")
 
-    api.plotCountry("iceland")
+    #api.plotCountry("iceland")
 
     #data = api.getData("/all")
 
