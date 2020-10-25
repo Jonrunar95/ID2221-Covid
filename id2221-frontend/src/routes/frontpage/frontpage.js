@@ -70,6 +70,8 @@ export default class Frontpage extends Component {
 		return array;
 	  }
 
+	  
+
 	render() {
 		const { data, loading, error, searchValue } = this.state;
 		if (loading) {
@@ -80,6 +82,15 @@ export default class Frontpage extends Component {
 		}
 		return (
 			<div className="Frontpage">
+				
+				<div className="Images">
+					<b>Confirmed Cases</b>
+					<img src={window.location.pathname + "/confirmed"} alt="Confirmed map" />
+					<b>Active Cases</b>
+					<img src={window.location.pathname + "/active"} alt="Active map" />
+					<b>Deaths</b>
+					<img src={window.location.pathname + "/death"} alt="Death map" />
+				</div>
 				<div>
 					<input
 						type="text"
