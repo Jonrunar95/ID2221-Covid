@@ -10,11 +10,8 @@ export default class Frontpage extends Component {
 			data: null,
 			loading: true, 
 			error: false,
-
-			confirmed: null,
-			active: null,
-			death: null,
-
+			
+			week: 43,
 			searchValue: ''
 		};
 		this.handleSearch = this.handleSearch.bind(this);
@@ -24,7 +21,6 @@ export default class Frontpage extends Component {
 	async componentDidMount() {
 		try {
 			const data = await this.fetchData();
-			await this.fetchImages();
 			this.setState({ fullData: data.data, data: data.data, loading: false});
 		} catch(err) {
 			console.error(err);
@@ -36,17 +32,6 @@ export default class Frontpage extends Component {
 		const response = await fetch("/frontpage");
 		const data = await response.json();
 		return data
-	}
-
-	async fetchImages(week) {
-		console.log(window.location.pathname)
-		const response1 = await fetch("heatmap/" + week + "/confirmed");
-		const response2 = await fetch("heatmap/" + week + "/active");
-		const response3 = await fetch("heatmap/" + week + "/death");
-		const confirmed = await response1.json();
-		const active = await response2.json();
-		const death = await response3.json();
-		this.setState({active, confirmed, death})
 	}
 
 	handleSearch(event) {
@@ -99,17 +84,11 @@ export default class Frontpage extends Component {
 
 
 	async handleClick(event) {
-		console.log(event.target.id)
-		try {
-			await this.fetchImages(event.target.id);
-		} catch(err) {
-			console.error(err);
-			this.setState({ error: true});
-		}
+		this.setState({week: event.target.id})
 	}
 
 	render() {
-		const { data, confirmed, active, death, loading, error, searchValue } = this.state;
+		const { data, loading, error, searchValue, week } = this.state;
 		if (loading) {
 		  return (<div>Loading data..</div>);
 		}
@@ -120,11 +99,11 @@ export default class Frontpage extends Component {
 			<div className="Frontpage">
 				<div className="Images">
 					<b>Confirmed Cases</b>
-					<img src={confirmed} alt="Confirmed map" />
+					<img src={"/heatmap/"+week+"/Confirmed"} alt="Confirmed map" />
 					<b>Active Cases</b>
-					<img src={active} alt="Active map" />
+					<img src={"/heatmap/"+week+"/active"} alt="Active map" />
 					<b>Deaths</b>
-					<img src={death} alt="Death map" />
+					<img src={"/heatmap/"+week+"/death"} alt="Death map" />
 				</div>
 				<div className="Buttons" onClick={this.handleClick}>
 					{this.createButtons()}
