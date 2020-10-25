@@ -1,3 +1,19 @@
+.Buttons {
+	display: flex;
+	max-width: 1200px;
+}
+.Button {
+	width: calc(100%/42);
+	font-family: LeituraSans, sans-serif;
+	flex: 1;
+	padding: 5px;
+	margin: 5px;
+	line-height: 1px;
+	text-decoration: none;
+	color: inherit;
+	cursor: pointer;
+  }
+
 .Frontpage {
 	display: block;
 }
