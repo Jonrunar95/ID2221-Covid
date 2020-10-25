@@ -54,30 +54,9 @@ def CountryInfoProducer():
 
     for x in data:
         d = x["Premium"]["CountryStats"]
-        key = x["Country"]
         msg = str(x["NewConfirmed"]) + "," + str(x["TotalConfirmed"]) + "," + str(x["NewDeaths"]) + "," + str(x["TotalDeaths"]) + "," + str(d["Population"]) + "," + str(d["CvdDeathRate"]) + "," + str(x["Date"][0:10])
-        if key is not "":
-            kafka_Info.produce(key, msg)
-
-def CountryCasesProducer():
-    api = API()
-    kafka_Cases = Kafka("CountryCases")
-
-    countries = api.getAllCountryNames()
-
-    i = 0
-    numCountries = len(countries)
-
-    for c in countries:
-        print(str(i) + "/" + str(numCountries) + " " + c["Slug"] + "...", end=" ")
-        i += 1
-        if(c["Slug"] == "réunion" or c["Slug"] == "saint-barthélemy"): # These guys is problem, also empty anyways...
-            continue
-        data = api.getDayOneCountry(c["Slug"])
-        for d in data:
-            msg = str(d["Confirmed"]) + "," + str(d["Active"]) + "," + str(d["Deaths"]) + "," + str(d["Date"][0:10])
-            kafka_Cases.produce(d["Country"], msg)
-        print("Done")
+        if d["Country"] is not "":
+            kafka_Info.produce(d["Country"], msg)
 
 def CountryCasesProducer():
     api = API()
@@ -109,17 +88,30 @@ def ProvinceCasesProducer():
     numCountries = len(countries)
 
     for c in countries:
-        print(str(i) + "/" + str(numCountries) + " " + c["Slug"] + " provinces...", end=" ")
+        print(str(i) + "/" + str(numCountries) + " " + c["Slug"])# + " provinces...", end=" ")
         i += 1
-        if(c["Slug"] == "réunion" or c["Slug"] == "saint-barthélemy"): # These guys is problem, also empty anyways...
+        if(c["Slug"] == "réunion" or c["Slug"] == "saint-barthélemy" or c["Slug"] == "united-states"): # These guys is problem, also empty anyways...
             continue
         data = api.getCountryProvinceCases(c["Slug"])
         for d in data:
-            msg = str(d["Province"]) + "," + str(d["Lat"]) + "," + str(d["Lon"]) + "," + str(d["Confirmed"]) + "," + str(d["Active"]) + "," + str(d["Deaths"]) + "," + str(d["Date"][0:10])
-            kafka_Cases.produce(d["Country"], msg)
+            key = d["Country"].replace(',', '')
+            province = key = d["Province"].replace(',', '')
+            msg = province + "," + str(d["Lat"]) + "," + str(d["Lon"]) + "," + str(d["Confirmed"]) + "," + str(d["Active"]) + "," + str(d["Deaths"]) + "," + str(d["Date"][0:10])
+            kafka_Cases.produce(key, msg)
         print("Done")
 
+def ProvinceCasesProducerTest():
+    api = API()
+    kafka_Cases = Kafka("ProvinceCases")
+    data = api.getCountryProvinceCases("united-states")
+    print(data)
+    for d in data:
+        key = d["Country"].replace(',', '')
+        province = key = d["Province"].replace(',', '')
+        msg = province + "," + str(d["Lat"]) + "," + str(d["Lon"]) + "," + str(d["Confirmed"]) + "," + str(d["Active"]) + "," + str(d["Deaths"]) + "," + str(d["Date"][0:10])
+        kafka_Cases.produce(key, msg)
+
 if __name__ == "__main__":
-    CountryInfoProducer()
-    CountryCasesProducer()
+    #CountryInfoProducer()
+    #CountryCasesProducer()
     ProvinceCasesProducer()

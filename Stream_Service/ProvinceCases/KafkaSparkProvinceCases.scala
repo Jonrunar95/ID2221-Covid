@@ -53,6 +53,10 @@ object KafkaSparkAllCountries {
     val topicsSet = Set("ProvinceCases")
     val kafkaStream  = KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder]( ssc, kafkaConf, topicsSet)
 
+    //kafkaStream.foreachRDD { rdd =>
+    //  rdd.collect.foreach(println)
+    //}
+    
     val messages = kafkaStream.map { x =>
       val country = x._1
       val data = x._2.split(",")
@@ -72,9 +76,9 @@ object KafkaSparkAllCountries {
       (province, provinceData)
     }
 
-    messages.foreachRDD { rdd =>
-      rdd.take(5).foreach(println)
-    }
+    //messages.foreachRDD { rdd =>
+    //  rdd.collect.foreach(println)
+    //}
 
     def mappingFunc1(key: String, value: Option[ProvinceData], state: State[ArrayBuffer[Int]]): (String, ProvinceData) = {
       val newValue = value.getOrElse(ProvinceData("", 0.0, 0.0, 0, 0, 0, 0))
@@ -103,13 +107,13 @@ object KafkaSparkAllCountries {
       state.update(ArrayBuffer(newValue.confirmed, newValue.active, newValue.death))
 
       val provinceData = ProvinceData(newValue.country, newValue.lat, newValue.lon, confirmedToday, activeToday, deathsToday, newValue.weekOfYear)
-      val provinceWeek = key + "," + newValue.weekOfYear.toString
+      val provinceWeek = key + ";;" + newValue.weekOfYear.toString
       (provinceWeek, provinceData)
     }
     val stateDstream1 = messages.mapWithState(StateSpec.function(mappingFunc1 _))
 
     def mappingFunc2(key: String, value: Option[ProvinceData], state: State[ArrayBuffer[ArrayBuffer[Int]]]): (String, String, Double, Double, Double, Double, Double, Int) = {
-      val keys = key.split(",")
+      val keys = key.split(";;")
       val province = keys(0).toString
       val week = keys(1).toInt
       //ProvinceData(country: String, lat: Double, lon: Double, confirmed: Int, active: Int, death: Int, weekOfYear: Int)
@@ -145,7 +149,6 @@ object KafkaSparkAllCountries {
     stateDstream2.foreachRDD { rdd =>
       rdd.saveToCassandra("covid", "provincecases", SomeColumns("country", "province", "lat", "lon", "confirmed", "active", "death", "week"))
     }
-    
     ssc.start()
     ssc.awaitTermination()
   }
