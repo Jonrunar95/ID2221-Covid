@@ -55,6 +55,7 @@ export default class Frontpage extends Component {
 
 	createTable(data) {
 		const array = [];
+		console.log(data[0])
 		for (let i = 0; i < data.length; i += 1) {
 			array.push(
 				<tr className="tr" key={i}>
@@ -99,9 +100,7 @@ export default class Frontpage extends Component {
 			<div className="Frontpage">
 				<div className="Images">
 					<b>Confirmed Cases</b>
-					<img src={"/heatmap/"+week+"/Confirmed"} alt="Confirmed map" />
-					<b>Active Cases</b>
-					<img src={"/heatmap/"+week+"/active"} alt="Active map" />
+					<img src={"/heatmap/"+week+"/confirmed"} alt="Confirmed map" />
 					<b>Deaths</b>
 					<img src={"/heatmap/"+week+"/death"} alt="Death map" />
 				</div>
@@ -114,9 +113,9 @@ export default class Frontpage extends Component {
 						value={searchValue}
 						className={"searchbox"}
 						name="searchBox"
-						placeholder="Leit"
+						placeholder="Search"
 						onFocus={(e) => { e.target.placeholder = ''; }}
-						onBlur={(e) => { e.target.placeholder = 'Leit'; }}
+						onBlur={(e) => { e.target.placeholder = 'Search'; }}
 						onChange={this.handleSearch}
 					/>
 				</div>

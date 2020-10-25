@@ -96,7 +96,7 @@ class API:
 if __name__ == "__main__":
     # Create API instance
 	api = API()
-	print(api.getWorld())
+	#print(api.getWorld())
 
     #countries = api.getAllCountryNames()
 

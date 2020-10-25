@@ -112,6 +112,6 @@ def ProvinceCasesProducerTest():
         kafka_Cases.produce(key, msg)
 
 if __name__ == "__main__":
-    #CountryInfoProducer()
-    #CountryCasesProducer()
+    CountryInfoProducer()
+    CountryCasesProducer()
     ProvinceCasesProducer()

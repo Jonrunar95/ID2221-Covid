@@ -66,18 +66,22 @@ def frontpage():
     result = srv.getAllCountryInfo()
     countryJson = []
     for row in result:
-        countryJson.append({"Country": row.country, "Date:": row.date, "NewConfirmed": row.newconfirmed, "NewDeaths": row.newdeaths,
+        countryJson.append({"Country": row.country, "Date": row.date, "NewConfirmed": row.newconfirmed, "NewDeaths": row.newdeaths,
                                 "TotalConfirmed": row.totalconfirmed, "TotalDeaths": row.totaldeaths, "Population": row.population,
-                                "DeathRate:": row.deathrate})
+                                "DeathRate": row.deathrate})
     return jsonify({"data": countryJson})
 
 @app.route('/Country/<Country>', methods=['GET'])
 def country(Country):
+    
+    info = srv.getCountryInfo("Iceland")
+    population = info.one().population
+
     result = srv.getCountryCases(Country)
     countryJson = []
     for row in result:
-        countryJson.append({"Date:": row.date, "Confirmed": row.confirmed, "ConfirmedLast14": row.confirmedlast14, "Deaths": row.deaths,
-                                "DeathsLast14": row.deathlast14})
+        countryJson.append({"Date": row.date, "Active": row.active, "Confirmed": row.confirmed, "ConfirmedToday": row.confirmedtoday, "ConfirmedLast14": row.confirmedlast14, "Deaths": row.deaths,
+                                "DeathsToday": row.deathstoday, "DeathsLast14": row.deathlast14, "InfectionRate": (row.confirmedlast14/population)*100000})
     return jsonify({"data": countryJson})
 
 
@@ -88,9 +92,9 @@ def plot_DailyCases_png(Country):
     FigureCanvas(fig).print_png(output)
     return Response(output.getvalue(), mimetype='image/png')
 
-@app.route('/Country/<Country>/plot_ActiveCases.png')
-def plot_ActiveCases_png(Country):
-    fig = create_activeCasesfigure(Country)
+@app.route('/Country/<Country>/plot_InfectionRate.png')
+def plot_InfectionRate_png(Country):
+    fig = create_infectionRatefigure(Country)
     output = io.BytesIO()
     FigureCanvas(fig).print_png(output)
     return Response(output.getvalue(), mimetype='image/png')
@@ -202,36 +206,36 @@ def create_dailyCasesfigure(country):
 ##
 ## Plotting functions
 ##
-def create_activeCasesfigure(country):
+def create_infectionRatefigure(country):
     result = srv.getCountryCases(country)
+
+    info = srv.getCountryInfo("Iceland")
+    population = info.one().population
+
     X = []
-    y_confirmed = []
-    y_deaths = []
+    y_rate = []
     for row in result:
         date = datetime.datetime.strptime(row.date, "%Y-%m-%d")
         X.append(date)
-        y_confirmed.append(row.active)
-        y_deaths.append(row.deaths)
+        y_rate.append((row.confirmedlast14/population)*100000)
 
     dates = mdates.date2num(X)
     fig = Figure(figsize=(10,5))
 
-    color = 'tab:blue'
     axis = fig.add_subplot(1, 1, 1)
-    axis.plot_date(dates, y_confirmed, xdate=True, ls='-', marker=None, label="Active Infections", color=color)
-    axis.tick_params(axis='y', labelcolor=color)
-    axis.set_ylabel('Daily Active Infections', color=color)
+    axis.plot_date(dates, y_rate, xdate=True, ls='-', marker=None, label="Infection Rate per 100k")
+    axis.set_ylabel('Infection Rate per 100k')
 
-    axis2 = axis.twinx()
-    color = 'tab:red'
-    axis2.plot_date(dates, y_deaths, xdate=True, ls='-', marker=None, label="Deaths", color=color, alpha=0.6)
-    #axis2.bar(dates, y_deaths, color=color, alpha=0.6)
-    axis2.tick_params(axis='y', labelcolor=color)
-    axis2.set_ylabel('Cumulative Deaths', color=color)
-    axis2.set_ylim(0, 2*max(y_deaths))
+    # axis2 = axis.twinx()
+    # color = 'tab:red'
+    # axis2.plot_date(dates, y_deaths, xdate=True, ls='-', marker=None, label="Deaths", color=color, alpha=0.6)
+    # #axis2.bar(dates, y_deaths, color=color, alpha=0.6)
+    # axis2.tick_params(axis='y', labelcolor=color)
+    # axis2.set_ylabel('Cumulative Deaths', color=color)
+    # axis2.set_ylim(0, 2*max(y_deaths))
 
     axis.margins(y=0) # Use this if we want to remove x axis padding also
-    axis2.margins(y=0) 
+    #axis2.margins(y=0) 
     fig.tight_layout()
     return fig
 
@@ -256,6 +260,7 @@ def create_infectionTrendfigure(country):
 if __name__ == "__main__":
     srv = Service()
     app.run()
+
     #createHeatmap()
     #result = srv.getCountryCases("Iceland")
     #for r in result:
